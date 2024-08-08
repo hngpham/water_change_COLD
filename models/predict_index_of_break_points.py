@@ -24,7 +24,7 @@ def _add_class(dfa, threshold):
     return dfa
 
 
-def _add_class_(dfa, threshold == 0):
+def _add_class_(dfa, threshold=0):
     dfa['class'] = 0
     dfa.loc[(dfa['incr'] == threshold), 'class'] = 0 # stay the same
     dfa.loc[dfa['incr'] > threshold, 'class'] = 2 # increasing
@@ -94,7 +94,7 @@ def predict_average_water_change_at_break_point(
     threshold = 0.1
     max_index = 112
     df_train = _add_class(df_train, threshold=0.1)
-    X, Y, scaler = _extract_XY_with_scaler(df_train, max_index)
+    X, Y, scaler = _extract_XY(df_train, max_index)
 
     # split data into train and test sets
     seed = 7
@@ -106,12 +106,11 @@ def predict_average_water_change_at_break_point(
     model.fit(X_train, y_train, verbose=False)
 
     logger.info("Training:")
-    data_distribution(df_train, table)
     predict_train, acc_train = _predict(model, X_test, y_test)
 
     df_infer = _add_class(df_infer, threshold)
     # data_distribution(df_infer)
-    X_infer, Y_infer, _ = _extract_XY_with_scaler(df_infer, max_index, scaler)
+    X_infer, Y_infer, _ = _extract_XY(df_infer, max_index)
 
     logger.info("Inference")
     predicts_infer, acc_infer = _predict(model, X_infer, Y_infer)
