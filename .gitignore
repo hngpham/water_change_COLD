@@ -1,0 +1,7 @@
+*.png
+/out*
+/landsat_1984_2000
+*.zip
+*.pyc
+*/__pycache__
+*.pkl
