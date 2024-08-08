@@ -1,5 +1,6 @@
 import os
 import pickle
+from xmlrpc.client import boolean
 from tqdm import tqdm
 from typing import List, Tuple
 import matplotlib.pyplot as plt
@@ -54,6 +55,7 @@ def plot_cold_coefs_from_all_coefs(
 
 
 def _plot_RGB_vs_water(
+    separate: bool,
     date: str,
     regions: List[List[int]],
     index: int,
@@ -87,19 +89,35 @@ def _plot_RGB_vs_water(
     delta_y = zoom * (y2 - y1)
     delta_x = zoom * (x2 - x1)
     y1, y2, x1, x2 = int(y1 + delta_y), int(y2 - delta_y), int(x1 + delta_x), int(x2 - delta_x)
-    
-    fig, ax = plt.subplots(1, 2, figsize=(20, 10))
-    ax[0].imshow(rgb_image[y1:y2, x1:x2])
-    ax[0].axis('off')  # Turn off axis ticks
-    ax[1].imshow(water_mask[y1:y2, x1:x2])
-    ax[1].axis('off')  # Turn off axis ticks
-    
-    plt.suptitle(f'Image Date: {date}')
-    plt.savefig(f'{output_folder}/{index}_{date}.png', bbox_inches='tight', pad_inches=0)
-    plt.close()
+
+    if separate:
+        # Create and save the RGB image
+        fig_rgb, ax_rgb = plt.subplots(figsize=(10, 10))
+        ax_rgb.imshow(rgb_image[y1:y2, x1:x2])
+        ax_rgb.axis('off')  # Turn off axis ticks
+        plt.savefig(f'{output_folder}/{index}_{date}_rgb.png', bbox_inches='tight', pad_inches=0)
+        plt.close(fig_rgb)
+
+        # Create and save the water mask image
+        fig_mask, ax_mask = plt.subplots(figsize=(10, 10))
+        ax_mask.imshow(water_mask[y1:y2, x1:x2])
+        ax_mask.axis('off')  # Turn off axis ticks
+        plt.savefig(f'{output_folder}/{index}_{date}_mask.png', bbox_inches='tight', pad_inches=0)
+        plt.close(fig_mask)
+
+    else:
+        fig, ax = plt.subplots(1, 2, figsize=(20, 10))
+        ax[0].imshow(rgb_image[y1:y2, x1:x2])
+        ax[0].axis('off')  # Turn off axis ticks
+        ax[1].imshow(water_mask[y1:y2, x1:x2])
+        ax[1].axis('off')  # Turn off axis ticks
+        
+        plt.suptitle(f'Image Date: {date}')
+        plt.savefig(f'{output_folder}/{index}_{date}.png', bbox_inches='tight', pad_inches=0)
+        plt.close()
 
 
-def plot_RGB_vs_water_years(input_data, indices, years, zoom: int = 1):
+def plot_RGB_vs_water_years(separate, input_data, indices, years, zoom: int = 1):
     from waterchange.datasets import load_landsat_image
 
     for year in years:
@@ -117,4 +135,10 @@ def plot_RGB_vs_water_years(input_data, indices, years, zoom: int = 1):
             mndwi = utils.normalized_difference(img, 3, 5)
             water_mask = mndwi > 0.0
             for index in indices:
-                _plot_RGB_vs_water(date, input_data.regions, index, rgb_image, water_mask, output_folder, zoom)
+                _plot_RGB_vs_water(separate,
+                                   date,
+                                   input_data.regions,
+                                   index, rgb_image,
+                                   water_mask,
+                                   output_folder,
+                                   zoom)
