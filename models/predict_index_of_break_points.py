@@ -42,6 +42,18 @@ def _extract_XY_with_scaler(df, max_index, scaler = None):
 
 
 def _extract_XY(df, max_index):
+    """
+    Decide to skip the scaler due to performance as shown here.
+    With scaler           Without scaler
+    Overall: 0.83 ± 0.01  Overall: 0.83 ± 0.01
+    Class 0: 0.91 ± 0.03  Class 0: 0.91 ± 0.03
+    Class 1: 0.65 ± 0.04  Class 1: 0.65 ± 0.04
+    Class 2: 0.67 ± 0.11  Class 2: 0.67 ± 0.11
+    Overall: 0.69 ± 0.12  Overall: 0.69 ± 0.16
+    Class 0: 0.96 ± 0.02  Class 0: 0.86 ± 0.15
+    Class 1: 0.20 ± 0.13  Class 1: 0.35 ± 0.26
+    Class 2: 0.11 ± 0.12  Class 2: 0.32 ± 0.19
+    """
     X = df.iloc[:,6:(6+max_index)].to_numpy()
     Y = df["class"].to_numpy()
     return X, Y, None
@@ -94,7 +106,7 @@ def predict_average_water_change_at_break_point(
     threshold = 0.1
     max_index = 112
     df_train = _add_class(df_train, threshold=0.1)
-    X, Y, scaler = _extract_XY(df_train, max_index)
+    X, Y, _ = _extract_XY(df_train, max_index)
 
     # split data into train and test sets
     seed = 7
