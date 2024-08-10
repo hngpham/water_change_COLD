@@ -117,7 +117,7 @@ def predict_average_water_index_all_pixels_from_first_coefs_all_bands(
     sub_dir_in_infer_first_all: str,
     sub_dir_in_infer_in_period: str,
     train_region_id: List[int],
-    infer_region_id: int) -> Tuple[pd.DataFrame, List[int], List[int]]:
+    infer_region_id: int) -> Tuple[pd.DataFrame, List[float], List[float]]:
 
     df_train = pd.DataFrame()  # Initialize an empty DataFrame instead of a list
     for index in train_region_id:
@@ -132,7 +132,7 @@ def predict_average_water_index_all_pixels_from_first_coefs_all_bands(
     df_infer_pixels_in_period = read_pkl(file_path)
 
     df_train, table = _add_class(df_train)
-    data_distribution(df_train, table)
+    data_distribution(df_train, "class", table)
     X, Y, le_name_mapping = _extract_XY_all_bands(df_train)
 
     # split data into train and test sets
@@ -151,7 +151,7 @@ def predict_average_water_index_all_pixels_from_first_coefs_all_bands(
     # Inference on pixels in period
     logger.info("Inference:")
     df_infer_pixels_in_period, table = _add_class(df_infer_pixels_in_period)
-    data_distribution(df_infer_pixels_in_period, table)
+    data_distribution(df_infer_pixels_in_period, "class", table)
     X_infer_in_period, Y_infer_in_period, le_name_mapping = _extract_XY_all_bands(df_infer_pixels_in_period)
     predict_infer_pixels_in_period, infer_pixels_in_period_acc = _predict(model, X_infer_in_period, Y_infer_in_period, le_name_mapping, table)
 
@@ -174,7 +174,7 @@ def predict_average_water_index_all_pixels_from_first_coefs_bands(
     train_region_id: List[int],
     infer_region_id: int,
     band1: int = 3,
-    band2: int = 5) -> Tuple[pd.DataFrame, List[int], List[int]]:
+    band2: int = 5) -> Tuple[pd.DataFrame, List[float], List[float]]:
 
     df_train = pd.DataFrame()  # Initialize an empty DataFrame instead of a list
     for index in train_region_id:
@@ -189,7 +189,7 @@ def predict_average_water_index_all_pixels_from_first_coefs_bands(
     df_infer_pixels_in_period = read_pkl(file_path)
 
     df_train, table = _add_class(df_train)
-    data_distribution(df_train, table)
+    data_distribution(df_train, "class", table)
     X, Y, le_name_mapping = _extract_XY_bands(df_train, band1, band2)
 
     # split data into train and test sets
@@ -208,7 +208,7 @@ def predict_average_water_index_all_pixels_from_first_coefs_bands(
     # Inference on pixels in period
     logger.info("Inference:")
     df_infer_pixels_in_period, table = _add_class(df_infer_pixels_in_period)
-    data_distribution(df_infer_pixels_in_period, table)
+    data_distribution(df_infer_pixels_in_period, "class", table)
     X_infer_in_period, Y_infer_in_period, le_name_mapping = _extract_XY_bands(df_infer_pixels_in_period, band1, band2)
     predict_infer_pixels_in_period, infer_pixels_in_period_acc = _predict(model, X_infer_in_period, Y_infer_in_period, le_name_mapping, table)
 

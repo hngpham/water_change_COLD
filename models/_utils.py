@@ -18,28 +18,37 @@ def get_base(n):
     return base
 
 
-def data_distribution(df, table):
-    hist, bins = np.histogram(df["class"], bins='auto')
+def data_distribution(df, col = "class", table = None):
+    hist, bins = np.histogram(df[col], bins='auto')
 
+    plt.figure()
     # Plot the histogram
-    plt.hist(df["class"], bins='auto', alpha=0.7, color='blue', edgecolor='black')
+    plt.hist(df[col], bins='auto', alpha=0.7, color='blue', edgecolor='black')
 
     # Add labels and title
     plt.xlabel('Value')
     plt.ylabel('Frequency')
     plt.title('Histogram of Values')
 
-    logger.debug(df["class"].value_counts().sort_index())
+    logger.debug(df[col].value_counts().sort_index())
 
-    class_counts = df["class"].value_counts().sort_index() # Get counts of each class
+    class_counts = df[col].value_counts().sort_index() # Get counts of each class
     total_samples = len(df)  # Total number of samples in the DataFrame
     # Calculate percentage for each class
     class_percentages = (class_counts / total_samples) * 100
     # Create a dictionary with class as keys and percentages as values
     result_dict = class_percentages.to_dict()
+    count = []
+    percentage = []
     for key, value in result_dict.items():
-        logger.debug("Table key: %s, Value: %s", table[key], round(value, 2))
-
+        if table:
+            logger.debug("Table key: %s, Value: %s", table[key], round(value, 2))
+        else:
+            logger.debug("Table key: %s, Value: %s", key, round(value, 2))
+        percentage.append(round(value))
+    for key, value in class_counts.to_dict().items():
+        count.append(value)
+    return [percentage, count]
 
 def _get_row_number_and_start(number, first_pos, base):
     """

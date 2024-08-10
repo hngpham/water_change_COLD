@@ -83,9 +83,11 @@ def _predict(model, X_test, y_test: Optional[np.ndarray] = None) -> Tuple[List[f
     # make predictions for test data
     y_pred = model.predict(X_test)
     if y_test is not None:
-        mae = mean_absolute_error(y_test, y_pred)
+        mse = mean_squared_error(y_test, y_pred)
+        variance_y = np.var(y_test)
+        nmse = mse / variance_y
         r2 = r2_score(y_test, y_pred)
-        return y_pred, mae, r2
+        return y_pred, nmse, r2
     else:
         return y_pred
 
@@ -98,6 +100,9 @@ def predict_average_water_index_all_pixels_from_first_coefs_all_bands_regression
     sub_dir_in_infer_in_period: str,
     train_region_id: List[int],
     infer_region_id: int) -> Tuple[pd.DataFrame, List[int], List[int]]:
+    """
+    Use the average water index within the period.
+    """
 
     df_train = pd.DataFrame()  # Initialize an empty DataFrame instead of a list
     for index in train_region_id:
@@ -137,12 +142,12 @@ def predict_average_water_index_all_pixels_from_first_coefs_all_bands_regression
     model = models[model_name]
     model.fit(X_train, y_train)
     # Train and evaluate on training data
-    _, mae_train, r2_train = _predict(model, X_test, y_test)
-    logger.debug(f"{model_name} - Training error: MAE = {mae_train}, R2 = {r2_train}")
+    _, nmse_train, r2_train = _predict(model, X_test, y_test)
+    logger.debug(f"{model_name} - Training error: NMSE = {nmse_train}, R2 = {r2_train}")
 
     # Evaluate on inference data
-    predict_infer_pixels_in_period, mae_infer_pixels_in_period, r2_infer_pixels_in_period = _predict(model, X_infer_in_period, Y_infer_in_period)
-    logger.debug(f"{model_name} - Inference error: MAE = {mae_infer_pixels_in_period}, R2 = {r2_infer_pixels_in_period}")
+    predict_infer_pixels_in_period, nmse_infer_pixels_in_period, r2_infer_pixels_in_period = _predict(model, X_infer_in_period, Y_infer_in_period)
+    logger.debug(f"{model_name} - Inference error: NMSE = {nmse_infer_pixels_in_period}, R2 = {r2_infer_pixels_in_period}")
 
     # Make predictions on all inference pixels
     y_pred = _predict(model, X_infer_all_pixels)
@@ -156,63 +161,63 @@ def predict_average_water_index_all_pixels_from_first_coefs_all_bands_regression
         if row['time'][0] < 1984 or row['time'][1] > 2000:
             df_infer_all_pixels.at[index, 'pred'] += 3
 
-    return df_infer_all_pixels
+    return df_infer_all_pixels, model, nmse_infer_pixels_in_period
     # return train_result, infer_result, mse_train, mse_infer_pixels_in_period # class_accuracies + [overall_accuracy]
 
 
-def predict_average_water_index_all_pixels_from_first_coefs_bands(
-    input_data,
-    sub_dir_in_train: str,
-    sub_dir_in_infer_first_all: str,
-    sub_dir_in_infer_in_period: str,
-    train_region_id: List[int],
-    infer_region_id: int,
-    band1: int = 3,
-    band2: int = 5) -> Tuple[pd.DataFrame, List[int], List[int]]:
+# def predict_average_water_index_all_pixels_from_first_coefs_bands(
+#     input_data,
+#     sub_dir_in_train: str,
+#     sub_dir_in_infer_first_all: str,
+#     sub_dir_in_infer_in_period: str,
+#     train_region_id: List[int],
+#     infer_region_id: int,
+#     band1: int = 3,
+#     band2: int = 5) -> Tuple[pd.DataFrame, List[int], List[int]]:
 
-    df_train = pd.DataFrame()  # Initialize an empty DataFrame instead of a list
-    for index in train_region_id:
-        file_path = create_file_path(input_data.data_dir, sub_dir_in_train, f"water_coefs_df_region_{index}.pkl")
-        read_df = read_pkl(file_path)
-        df_train = pd.concat([df_train, read_df], axis=0)  # Concatenate DataFrames
+#     df_train = pd.DataFrame()  # Initialize an empty DataFrame instead of a list
+#     for index in train_region_id:
+#         file_path = create_file_path(input_data.data_dir, sub_dir_in_train, f"water_coefs_df_region_{index}.pkl")
+#         read_df = read_pkl(file_path)
+#         df_train = pd.concat([df_train, read_df], axis=0)  # Concatenate DataFrames
 
-    file_path = create_file_path(input_data.data_dir, sub_dir_in_infer_first_all, f"first_coefs_all_pixels_region_{infer_region_id}.pkl")
-    df_infer_all_pixels = read_pkl(file_path)
+#     file_path = create_file_path(input_data.data_dir, sub_dir_in_infer_first_all, f"first_coefs_all_pixels_region_{infer_region_id}.pkl")
+#     df_infer_all_pixels = read_pkl(file_path)
 
-    file_path = create_file_path(input_data.data_dir, sub_dir_in_infer_in_period, f"water_coefs_df_region_{infer_region_id}.pkl")
-    df_infer_pixels_in_period = read_pkl(file_path)
+#     file_path = create_file_path(input_data.data_dir, sub_dir_in_infer_in_period, f"water_coefs_df_region_{infer_region_id}.pkl")
+#     df_infer_pixels_in_period = read_pkl(file_path)
 
-    df_train, table = _add_class(df_train)
-    data_distribution(df_train, table)
-    X, Y, le_name_mapping = _extract_XY_bands(df_train, band1, band2)
+#     df_train, table = _add_class(df_train)
+#     data_distribution(df_train, "class", table)
+#     X, Y, le_name_mapping = _extract_XY_bands(df_train, band1, band2)
 
-    # split data into train and test sets
-    seed = 7
-    test_size = 0.33
-    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=test_size, random_state=seed)
+#     # split data into train and test sets
+#     seed = 7
+#     test_size = 0.33
+#     X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=test_size, random_state=seed)
 
-    # fit model no training data
-    model = XGBClassifier()
-    model.fit(X_train, y_train, verbose=False)
+#     # fit model no training data
+#     model = XGBClassifier()
+#     model.fit(X_train, y_train, verbose=False)
 
-    # Inference on all pixels
-    logger.info("Training:")
-    predict_train, train_acc = _predict(model, X_test, y_test, le_name_mapping, table)
+#     # Inference on all pixels
+#     logger.info("Training:")
+#     predict_train, train_acc = _predict(model, X_test, y_test, le_name_mapping, table)
 
-    # Inference on pixels in period
-    logger.info("Inference:")
-    df_infer_pixels_in_period, table = _add_class(df_infer_pixels_in_period)
-    data_distribution(df_infer_pixels_in_period, table)
-    X_infer_in_period, Y_infer_in_period, le_name_mapping = _extract_XY_bands(df_infer_pixels_in_period, band1, band2)
-    predict_infer_pixels_in_period, infer_pixels_in_period_acc = _predict(model, X_infer_in_period, Y_infer_in_period, le_name_mapping, table)
+#     # Inference on pixels in period
+#     logger.info("Inference:")
+#     df_infer_pixels_in_period, table = _add_class(df_infer_pixels_in_period)
+#     data_distribution(df_infer_pixels_in_period, "class", table)
+#     X_infer_in_period, Y_infer_in_period, le_name_mapping = _extract_XY_bands(df_infer_pixels_in_period, band1, band2)
+#     predict_infer_pixels_in_period, infer_pixels_in_period_acc = _predict(model, X_infer_in_period, Y_infer_in_period, le_name_mapping, table)
 
-    X_infer_all_pixels = df_infer_all_pixels.iloc[:,2:58].to_numpy()
-    X_infer_all_pixels = get_bands_from_df(X_infer_all_pixels, band1, band2)
-    y_pred = model.predict(X_infer_all_pixels)
-    df_infer_all_pixels["pred"] = y_pred
+#     X_infer_all_pixels = df_infer_all_pixels.iloc[:,2:58].to_numpy()
+#     X_infer_all_pixels = get_bands_from_df(X_infer_all_pixels, band1, band2)
+#     y_pred = model.predict(X_infer_all_pixels)
+#     df_infer_all_pixels["pred"] = y_pred
 
-    for index, row in df_infer_all_pixels.iterrows():
-        if row['time'][0] < 1984 or row['time'][1] > 2000:
-            df_infer_all_pixels.at[index, 'pred'] += 3
+#     for index, row in df_infer_all_pixels.iterrows():
+#         if row['time'][0] < 1984 or row['time'][1] > 2000:
+#             df_infer_all_pixels.at[index, 'pred'] += 3
 
-    return df_infer_all_pixels, train_acc, infer_pixels_in_period_acc # class_accuracies + [overall_accuracy]
+#     return df_infer_all_pixels, train_acc, infer_pixels_in_period_acc # class_accuracies + [overall_accuracy]

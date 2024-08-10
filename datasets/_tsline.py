@@ -198,6 +198,9 @@ def extract_water_index_coefs_within_period_to_df(
     sub_dir_out: str = "water_coefs_in_period",
     region_id: int = 0, data_range = [1984, 2000]
 ) -> None:
+    """
+    24001370, 1997 1999, [None, None, None, None, None, None, None, None, None, None, None, None, None, 0.0, 0.0, 0.0, None] average, coefs
+    """
     cold = {}
     y1, y2, x1, x2 = input_data.regions[region_id]
     
@@ -254,7 +257,10 @@ def extract_break_point_from_water_coefs_df(
     sub_dir_in: str,
     sub_dir_out: str,
     region_id: int) -> None:
-    
+    """
+                  0,    1,    2,        3,            4,            5,        6-61,      62-117
+    Output: 9501861, prev, curr, increase, [1988, 1989], [1989, 1991], prev[coefs], curr[coefs]
+    """
     file_path_in = utils.create_file_path(input_data.data_dir, sub_dir_in, f"water_coefs_df_region_{region_id}.pkl")
     df = pd.read_pickle(file_path_in)
 

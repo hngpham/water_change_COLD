@@ -15,7 +15,8 @@ from .predict_index_regression import (
 )
 
 from .predict_index_of_break_points import (
-    predict_average_water_change_at_break_point
+    predict_average_water_change_at_break_point,
+    predict_average_water_change_at_break_point_from_trained_model,
 )
 __all__ = [
 
@@ -27,4 +28,5 @@ __all__ = [
     "predict_average_water_index_all_pixels_from_first_coefs_all_bands",
     "predict_average_water_index_all_pixels_from_first_coefs_all_bands_regression",
     "predict_average_water_change_at_break_point",
+    "predict_average_water_change_at_break_point_from_trained_model",
 ]
